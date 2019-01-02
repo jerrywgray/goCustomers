@@ -1,0 +1,35 @@
+version: '3.1'
+services:
+  db:
+    build: ./db
+    volumes:
+      - ./db/pgdata:/pgdata
+    ports:
+      - "${POSTGRES_INTERNAL_PORT}:${POSTGRES_PORT}"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      INITIALIZE: ${INITIALIZE}
+      PGDATA: /tmp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${POSTGRES_PORT}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  api:
+    build:
+      context: ./
+      dockerfile: api/dev.Dockerfile
+    security_opt:
+      - seccomp:unconfined
+    volumes:
+      - ./:/go/src/github.com/jerrywgray/goCustomers
+    ports:
+      - "${PORT}:${APP_PORT}"
+    restart: on-failure
+    depends_on:
+      - db
+    links:
+      - db
